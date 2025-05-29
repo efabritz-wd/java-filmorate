@@ -5,13 +5,14 @@ import lombok.Data;
 import java.time.LocalDate;
 
 /**
- * Film.
+ * User.
  */
+
 @Data
-public class Film {
+public class User {
     Integer id;
+    String email;
+    String login;
     String name;
-    String description;
-    LocalDate releaseDate;
-    Long duration;
+    LocalDate birthday;
 }
