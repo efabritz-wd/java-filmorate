@@ -27,7 +27,7 @@ public class FilmController {
     public static boolean validateFilm(Film film, boolean creation) {
         if (creation) {
             if (film.getName() == null || film.getDescription() == null
-            || film.getReleaseDate() == null || film.getDuration() == null) {
+                    || film.getReleaseDate() == null || film.getDuration() == null) {
                 log.error("Ошибка валидации при создании фильма: одно из полей отсутствует");
                 return false;
             }
