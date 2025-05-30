@@ -40,8 +40,7 @@ public class FilmController {
                 log.error("Ошибка валидации при создании фильма: одно из полей неверно заполнено");
                 return false;
             }
-        }
-        if (!creation) {
+        } else {
             if (film.getName() != null && film.getName().isBlank()) {
                 log.error("Ошибка валидации при обновлении фильма: имя пустое");
                 return false;
@@ -69,10 +68,6 @@ public class FilmController {
         }
         log.info("Новый фильм прошел валидацию. Установка значений полей");
         film.setId(getNextId());
-        film.setName(film.getName());
-        film.setDuration(film.getDuration());
-        film.setDescription(film.getDescription());
-        film.setReleaseDate(film.getReleaseDate());
         films.put(film.getId(), film);
         log.info("Новый фильм добавлен");
         return film;

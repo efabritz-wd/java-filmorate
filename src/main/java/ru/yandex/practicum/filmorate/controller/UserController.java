@@ -70,10 +70,6 @@ public class UserController {
         }
         log.info("Новый пользователь прошел валидацию. Создание полей пользователя");
         user.setId(getNextId());
-        user.setName(user.getName());
-        user.setEmail(user.getEmail());
-        user.setLogin(user.getLogin());
-        user.setBirthday(user.getBirthday());
 
         users.put(user.getId(), user);
         log.info("Новый пользователь добавлен");
