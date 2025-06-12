@@ -1,121 +1,62 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
-import ru.yandex.practicum.filmorate.exception.FilmNotFound;
-import ru.yandex.practicum.filmorate.exception.FilmValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-
-import java.time.LocalDate;
+import ru.yandex.practicum.filmorate.service.film.FilmService;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/films")
 public class FilmController {
-    private final Map<Integer, Film> films = new HashMap<>();
-    public static final LocalDate boundaryReleaseDate = LocalDate.of(1895, 12, 28);
+
+    private final FilmService filmService;
+
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
+    }
 
     @GetMapping
     public Collection<Film> findAll() {
-        return films.values();
+        return filmService.getFilmStorage().findAllFilms();
     }
 
-    public static boolean validateFilm(Film film, boolean creation) {
-        if (creation) {
-            if (film.getName() == null || film.getDescription() == null
-                    || film.getReleaseDate() == null || film.getDuration() == null) {
-                log.error("Ошибка валидации при создании фильма: одно из полей отсутствует");
-                return false;
-            }
-
-            if (!film.getName().isBlank() && film.getDescription().length() <= 200
-                    && film.getReleaseDate().isAfter(boundaryReleaseDate) && (film.getDuration() > 0)) {
-                log.info("Валидация фильма прошла успешно");
-                return true;
-            } else {
-                log.error("Ошибка валидации при создании фильма: одно из полей неверно заполнено");
-                return false;
-            }
-        } else {
-            if (film.getName() != null && film.getName().isBlank()) {
-                log.error("Ошибка валидации при обновлении фильма: имя пустое");
-                return false;
-            }
-            if (film.getDescription() != null && (film.getDescription().length() > 200)) {
-                log.error("Ошибка валидации при обновлении фильма: описание больше 2000 символов");
-                return false;
-            }
-            if (film.getReleaseDate() != null && (film.getReleaseDate().isBefore(boundaryReleaseDate))) {
-                log.error("Ошибка валидации при обновлении фильма: дата выпуска до первого фильма");
-                return false;
-            }
-            if (film.getDuration() != null && (film.getDuration() < 0)) {
-                log.error("Ошибка валидации при обновлении фильма: продолжительность отрицательная");
-                return false;
-            }
-        }
-        return false;
+    @GetMapping(value = "/{filmId}")
+    public Film findUserById(@RequestParam int filmId) {
+        return filmService.getFilmStorage().findFilmById(filmId);
     }
 
     @PostMapping
     public Film createFilm(@RequestBody Film film) {
-        if (!validateFilm(film, true)) {
-            throw new FilmValidationException("Фильм не прошел валидацию при добавлении");
-        }
-        log.info("Новый фильм прошел валидацию. Установка значений полей");
-        film.setId(getNextId());
-        films.put(film.getId(), film);
-        log.info("Новый фильм добавлен");
-        return film;
-    }
-
-    private int getNextId() {
-        int currentMaxId = films.keySet()
-                .stream()
-                .mapToInt(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+        return filmService.getFilmStorage().createFilm(film);
     }
 
     @PutMapping
     public Film update(@RequestBody Film newFilm) {
-        if (newFilm.getId() == null) {
-            log.error("Фильма с таким id не существует");
-            throw new ConditionsNotMetException("Id должен быть указан");
-        }
+        return filmService.getFilmStorage().updateFilm(newFilm);
+    }
 
-        if (validateFilm(newFilm, false)) {
-            throw new FilmValidationException("Фильм не прошел валидацию при обновлении");
-        }
-        if (films.containsKey(newFilm.getId())) {
-            Film oldFilm = films.get(newFilm.getId());
+    // PUT /films/{id}/like/{userId}
+    @PutMapping(value = "/{id}/like/{userId}")
+    public void setLikeToFilm(@RequestBody int id, int userId) {
+        filmService.addLikeToFilm(id, userId);
+    }
 
-            if (newFilm.getName() != null) {
-                log.info("Обновление названия фильма");
-                oldFilm.setName(newFilm.getName());
-            }
-            if (newFilm.getDescription() != null) {
-                log.info("Обновление описания фильма");
-                oldFilm.setDescription(newFilm.getDescription());
-            }
-            if (newFilm.getReleaseDate() != null) {
-                log.info("Обновление даты выпуска фильма");
-                oldFilm.setReleaseDate(newFilm.getReleaseDate());
-            }
-            if (newFilm.getDuration() != null) {
-                log.info("Обновление продолжительности фильма");
-                oldFilm.setDuration(newFilm.getDuration());
-            }
-
-            return oldFilm;
-        } else {
-            log.error("Обновление фильма: Фильм не найден");
-            throw new FilmNotFound("Фильм с id: " + newFilm.getId() + " не найден");
+    // DELETE /films/{id}/like/{userId}
+    @DeleteMapping(value = "/{id}/like/{userId}")
+    public void deleteLikeToFilm(@RequestBody int id, int userId) {
+        filmService.deleteLike(id, userId);
+    }
+    // GET /films/popular?count={count}
+    @GetMapping("/popular")
+    public List<Film> getPopularFilms(@RequestBody int count) {
+        if (count > 10) {
+            count = 10;
         }
+        return filmService.getFilmsWithMostLikes(count);
     }
 }
