@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface UserStorage {
     List<User> findAllUsers();
-    User findUserById(int id);
+    User findUserById(long id);
     User createUser(User user);
     User updateUser(User user);
     void deleteUser(User user);

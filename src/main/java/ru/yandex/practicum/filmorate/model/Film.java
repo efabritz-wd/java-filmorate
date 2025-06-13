@@ -13,7 +13,7 @@ import java.util.Set;
  */
 @Data
 public class Film {
-    Integer id;
+    Long id;
     @NotBlank
     String name;
     @NotNull

@@ -2,12 +2,11 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
-import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
-import ru.yandex.practicum.filmorate.exception.UserValidationException;
+import ru.yandex.practicum.filmorate.exception.*;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,22 +14,21 @@ import java.util.Map;
 @Slf4j
 @Component
 public class InMemoryUserStorage implements UserStorage {
-    private Integer id = 0;
-    private final Map<Integer, User> usersMap = new HashMap<>();
+    private final Map<Long, User> usersMap = new HashMap<>();
 
     @Override
     public List<User> findAllUsers() {
         if (usersMap.values().isEmpty()) {
-            return List.of();
+            return new ArrayList<>();
         }
 
-        return (List<User>) usersMap.values();
+        return new ArrayList<>(usersMap.values());
     }
 
     @Override
-    public User findUserById(int id) {
+    public User findUserById(long id) {
         if (!usersMap.keySet().contains(id)) {
-            throw new UserNotFoundException("Фильма с id " + id + " не существует");
+            throw new NotFoundException("Пользователя с id " + id + " не существует", User.class.getName());
         }
         return usersMap.get(id);
     }
@@ -38,7 +36,7 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public User createUser(User user) {
         if (!validateUser(user, true)) {
-            throw new UserValidationException("Фильм не прошел валидацию при добавлении");
+            throw new ValidationException("Фильм не прошел валидацию при добавлении", User.class.getName());
         }
         log.info("Новый пользователь прошел валидацию. Создание полей пользователя");
         user.setId(getNextId());
@@ -52,14 +50,14 @@ public class InMemoryUserStorage implements UserStorage {
     public User updateUser(User user) {
         if (user.getId() == null) {
             log.error("Обновление пользователя: не указан id");
-            throw new ConditionsNotMetException("Id должен быть указан");
+            throw new NotFoundException("Id должен быть указан", User.class.getName());
         }
         if (!usersMap.containsKey(user.getId())) {
             log.error("Обновление пользователя: пользователь не найден");
-            throw new UserNotFoundException("Пользователь с id: " + user.getId() + " не найден");
+            throw new NotFoundException("Пользователь с id: " + user.getId() + " не найден", User.class.getName());
         }
         if (!validateUser(user, false)) {
-            throw new UserValidationException("Фильм не прошел валидацию при добавлении");
+            throw new ValidationException("Фильм не прошел валидацию при добавлении", User.class.getName());
         }
         if (usersMap.containsKey(user.getId())) {
             User oldUser = usersMap.get(user.getId());
@@ -81,7 +79,11 @@ public class InMemoryUserStorage implements UserStorage {
                 oldUser.setBirthday(user.getBirthday());
             }
 
-            usersMap.put(user.getId(), user);
+            if (!user.getFriends().isEmpty()) {
+                log.info("Обновление друзей пользователя");
+                oldUser.setFriends(user.getFriends());
+            }
+            usersMap.put(user.getId(), oldUser);
         }
         return user;
     }
@@ -89,16 +91,16 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public void deleteUser(User user) {
         if (!usersMap.keySet().contains(user.getId())) {
-            throw new UserNotFoundException("Фильма с id " + user.getId() + " не существует");
+            throw new NotFoundException("Фильма с id " + user.getId() + " не существует", User.class.getName());
         }
         usersMap.remove(user.getId());
         log.info("Пользователь с id " + user.getId() + " удален.");
     }
 
-    private int getNextId() {
-        int currentMaxId = usersMap.keySet()
+    private long getNextId() {
+        long currentMaxId = usersMap.keySet()
                 .stream()
-                .mapToInt(id -> id)
+                .mapToLong(id -> id)
                 .max()
                 .orElse(0);
         return ++currentMaxId;

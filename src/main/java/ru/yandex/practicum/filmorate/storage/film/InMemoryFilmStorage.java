@@ -2,11 +2,12 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.FilmNotFound;
-import ru.yandex.practicum.filmorate.exception.FilmValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,22 +15,22 @@ import java.util.Map;
 @Slf4j
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
-    private final Map<Integer, Film> filmsMap = new HashMap<>();
+    private final Map<Long, Film> filmsMap = new HashMap<>();
     public static final LocalDate boundaryReleaseDate = LocalDate.of(1895, 12, 28);
 
     @Override
     public List<Film> findAllFilms() {
         if (filmsMap.values().isEmpty()) {
-            return List.of();
+            return new ArrayList<>();
         }
 
-        return (List<Film>) filmsMap.values();
+        return new ArrayList<>(filmsMap.values());
     }
 
     @Override
-    public Film findFilmById(int id) {
+    public Film findFilmById(long id) {
         if (!filmsMap.containsKey(id)) {
-            throw new FilmNotFound("Фильма с id " + id + " не существует");
+            throw new NotFoundException("Фильма с id " + id + " не существует", Film.class.getName());
         }
         return filmsMap.get(id);
     }
@@ -37,7 +38,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public Film createFilm(Film film) {
         if (!validateFilm(film, true)) {
-            throw new FilmValidationException("Ошибка валидации фильма при создании");
+            throw new ValidationException("Ошибка валидации фильма при создании", Film.class.getName());
         }
         film.setId(getNextId());
         filmsMap.put(film.getId(), film);
@@ -46,29 +47,58 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film updateFilm(Film film) {
+        if (film.getId() == null) {
+            log.error("Обновление фильма: не указан id");
+            throw new NotFoundException("Id должен быть указан", Film.class.getName());
+        }
+        if (!filmsMap.containsKey(film.getId())) {
+            log.error("Обновление фильма: Фильм не найден");
+            throw new NotFoundException("Фильма с id " + film.getId() + " не существует", Film.class.getName());
+        }
         if (!validateFilm(film, false)) {
-            throw new FilmValidationException("Ошибка валидации фильма при обновлении");
+            throw new ValidationException("Ошибка валидации фильма при обновлении", Film.class.getName());
         }
-        if (!filmsMap.keySet().contains(film.getId())) {
-            throw new FilmNotFound("Фильма с id " + film.getId() + " не существует");
+
+        Film oldFilm = filmsMap.get(film.getId());
+
+        if (film.getName() != null) {
+            log.info("Обновление названия фильма");
+            oldFilm.setName(film.getName());
         }
-        filmsMap.put(film.getId(), film);
-        return film;
+        if (film.getDescription() != null) {
+            log.info("Обновление описания фильма");
+            oldFilm.setDescription(film.getDescription());
+        }
+        if (film.getReleaseDate() != null) {
+            log.info("Обновление даты выпуска фильма");
+            oldFilm.setReleaseDate(film.getReleaseDate());
+        }
+        if (film.getDuration() != null) {
+            log.info("Обновление продолжительности фильма");
+            oldFilm.setDuration(film.getDuration());
+        }
+        if (!film.getLikes().isEmpty()) {
+            log.info("Обновление лайков фильма");
+            oldFilm.setLikes(film.getLikes());
+        }
+
+        filmsMap.put(film.getId(), oldFilm);
+        return oldFilm;
     }
 
     @Override
     public void deleteFilm(Film film) {
         if (!filmsMap.keySet().contains(film.getId())) {
-            throw new FilmNotFound("Фильма с id " + film.getId() + " не существует");
+            throw new NotFoundException("Фильма с id " + film.getId() + " не существует", Film.class.getName());
         }
         filmsMap.remove(film.getId());
         log.info("Фильм с id " + film.getId() + " удален.");
     }
 
-    private int getNextId() {
-        int currentMaxId = filmsMap.keySet()
+    private long getNextId() {
+        long currentMaxId = filmsMap.keySet()
                 .stream()
-                .mapToInt(id -> id)
+                .mapToLong(id -> id)
                 .max()
                 .orElse(0);
         return ++currentMaxId;
@@ -107,8 +137,8 @@ public class InMemoryFilmStorage implements FilmStorage {
                 log.error("Ошибка валидации при обновлении фильма: продолжительность отрицательная");
                 return false;
             }
+            return true;
         }
-        return false;
     }
 
 }
