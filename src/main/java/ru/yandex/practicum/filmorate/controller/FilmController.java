@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -22,22 +23,22 @@ public class FilmController {
 
     @GetMapping
     public List<Film> findAll() {
-        return filmService.getFilmStorage().findAllFilms();
+        return filmService.findAllFilms();
     }
 
     @GetMapping(value = "/{filmId}")
-    public Film findUserById(@PathVariable int filmId) {
-        return filmService.getFilmStorage().findFilmById(filmId);
+    public Film findFilmById(@PathVariable int filmId) {
+        return filmService.findFilm(filmId);
     }
 
     @PostMapping
-    public Film createFilm(@RequestBody Film film) {
-        return filmService.getFilmStorage().createFilm(film);
+    public Film createFilm(@Valid @RequestBody Film film) {
+        return filmService.createFilm(film);
     }
 
     @PutMapping
-    public Film update(@RequestBody Film newFilm) {
-        return filmService.getFilmStorage().updateFilm(newFilm);
+    public Film updateFilm(@Valid @RequestBody Film newFilm) {
+        return filmService.updateFilm(newFilm);
     }
 
     @PutMapping(value = "/{id}/like/{userId}")

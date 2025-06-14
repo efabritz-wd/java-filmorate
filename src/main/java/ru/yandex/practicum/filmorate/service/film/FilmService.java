@@ -14,19 +14,34 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 public class FilmService {
-    @Getter
     private final FilmStorage filmStorage;
-    @Getter
     private final UserStorage userStorage;
 
     public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+    }
+
+    public List<Film> findAllFilms() {
+        return this.filmStorage.findAllFilms();
+    }
+
+    public Film findFilm(long id) {
+        return this.filmStorage.findFilmById(id);
+    }
+
+    public Film createFilm(Film film) {
+        return this.filmStorage.createFilm(film);
+    }
+
+    public Film updateFilm(Film film) {
+        return this.filmStorage.updateFilm(film);
     }
 
     public void addLikeToFilm(int filmId, int userId) {

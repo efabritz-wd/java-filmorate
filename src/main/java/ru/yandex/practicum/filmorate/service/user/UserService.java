@@ -8,16 +8,32 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
 @Service
 public class UserService {
-    @Getter
     private final UserStorage userStorage;
 
     public UserService(UserStorage userStorage) {
         this.userStorage = userStorage;
+    }
+
+    public List<User> findAllUsers() {
+        return this.userStorage.findAllUsers();
+    }
+
+    public User findUser(long id) {
+        return this.userStorage.findUserById(id);
+    }
+
+    public User createUser(User user) {
+        return this.userStorage.createUser(user);
+    }
+
+    public User updateUser(User user) {
+        return this.userStorage.updateUser(user);
     }
 
     public void addToFriends(long userId, long friendId) {
