@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service.film;
 
 import org.springframework.stereotype.Service;
 
-import lombok.Getter;
 import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
