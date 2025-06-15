@@ -14,15 +14,15 @@ import java.util.Set;
 
 @Data
 public class User {
-    Long id;
+    private Long id;
     @Email
     @NotNull
-    String email;
+    private String email;
     @NotNull
-    String login;
-    String name;
+    private String login;
+    private String name;
     @NotNull
-    LocalDate birthday;
+    private LocalDate birthday;
 
     private Set<Long> friends = new HashSet<>();
 }
