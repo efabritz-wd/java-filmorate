@@ -5,19 +5,27 @@ import lombok.Data;
 import org.hibernate.validator.constraints.NotBlank;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Film.
  */
 @Data
 public class Film {
-    Integer id;
+    private Long id;
     @NotBlank
-    String name;
+    private String name;
     @NotNull
-    String description;
+    private String description;
     @NotNull
-    LocalDate releaseDate;
+    private LocalDate releaseDate;
     @NotNull
-    Long duration;
+    private Long duration;
+
+    private Set<Long> likes = new HashSet<>();
+
+    public int getLikesAmount() {
+        return this.likes.size();
+    }
 }

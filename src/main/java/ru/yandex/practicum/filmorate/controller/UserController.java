@@ -1,124 +1,72 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
-import ru.yandex.practicum.filmorate.exception.FilmValidationException;
-import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
-import ru.yandex.practicum.filmorate.exception.UserValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.user.UserService;
 
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
-    private final Map<Integer, User> users = new HashMap<>();
+    private final UserService userService;
 
-    @GetMapping
-    public Collection<User> findAll() {
-        return users.values();
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
-    public static boolean validateUser(User user, boolean creation) {
-        if (creation && (user.getEmail() == null || user.getLogin() == null)) {
-            log.error("Ошибка валидации: email или пароль null");
-            return false;
-        }
+    @GetMapping
+    public List<User> findAll() {
+        return userService.findAllUsers();
+    }
 
-        if (!creation && (user.getEmail() == null || user.getLogin() == null || user.getName() == null || user.getBirthday() == null)) {
-            log.error("Ошибка валидации: email или пароль null");
-            return false;
-        }
-
-        if (user.getEmail() != null && (user.getEmail().isBlank() || !user.getEmail().contains("@"))) {
-            log.error("Ошибка валидации: некорректный email");
-            return false;
-        }
-        if (user.getLogin() != null && (user.getLogin().isBlank() || user.getLogin().contains(" "))) {
-            log.error("Ошибка валидации: login пустой или с пробелом");
-            return false;
-        }
-
-        if (creation && (user.getName() == null || (user.getName().isBlank()))) {
-            log.debug("Валидация: имя пользователя отсутствует, будет использован login");
-            String login = user.getLogin();
-            user.setName(login);
-        }
-
-        if (!creation && user.getName() != null && (user.getName().isBlank())) {
-            log.debug("Валидация: имя пользователя отсутствует, будет использован login");
-            String login = user.getLogin();
-            user.setName(login);
-        }
-
-        if (user.getBirthday() != null && (user.getBirthday().isAfter(LocalDate.now()))) {
-            log.error("Ошибка валидации: некорректный день рождения");
-            return false;
-        }
-        return true;
+    @GetMapping(value = "/{userId}")
+    public User findUserById(@PathVariable int userId) {
+        return userService.findUser(userId);
     }
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        if (!validateUser(user, true)) {
-            throw new FilmValidationException("Фильм не прошел валидацию при добавлении");
-        }
-        log.info("Новый пользователь прошел валидацию. Создание полей пользователя");
-        user.setId(getNextId());
-
-        users.put(user.getId(), user);
-        log.info("Новый пользователь добавлен");
-        return user;
-    }
-
-    private int getNextId() {
-        int currentMaxId = users.keySet()
-                .stream()
-                .mapToInt(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+    public User createUser(@Valid @RequestBody User user) {
+        return userService.createUser(user);
     }
 
     @PutMapping
-    public User update(@RequestBody User newUser) {
-        if (newUser.getId() == null) {
-            log.error("Обновление пользователя: не указан id");
-            throw new ConditionsNotMetException("Id должен быть указан");
-        }
+    public User update(@Valid @RequestBody User newUser) {
+        return userService.updateUser(newUser);
+    }
 
-        if (!validateUser(newUser, false)) {
-            throw new UserValidationException("Пользователь не прошел валидацию при обновлении");
-        }
-        if (users.containsKey(newUser.getId())) {
-            User oldUser = users.get(newUser.getId());
+    @PutMapping(value = "/{id}/friends/{friendId}")
+    public void addToFriends(@PathVariable int id, @PathVariable int friendId) {
+        userService.addToFriends(id, friendId);
+    }
 
-            if (newUser.getName() != null) {
-                log.info("Обновление имени пользователя");
-                oldUser.setName(newUser.getName());
-            }
-            if (newUser.getEmail() != null) {
-                log.info("Обновление мэйла пользователя");
-                oldUser.setEmail(newUser.getEmail());
-            }
-            if (newUser.getLogin() != null) {
-                log.info("Обновление логина пользователя");
-                oldUser.setLogin(newUser.getLogin());
-            }
-            if (newUser.getBirthday() != null) {
-                log.info("Обновление дня рождения пользователя");
-                oldUser.setBirthday(newUser.getBirthday());
-            }
+    @DeleteMapping(value = "/{id}/friends/{friendId}")
+    public void deleteFromFriends(@PathVariable int id, @PathVariable int friendId) {
+        userService.deleteFromFriends(id, friendId);
+    }
 
-            return oldUser;
-        } else {
-            log.error("Обновление пользователя: пользователь не найден");
-            throw new UserNotFoundException("Пользователь с id: " + newUser.getId() + " не найден");
+    @GetMapping(value = "/{id}/friends")
+    public List<User> getUserFriends(@PathVariable int id) {
+        User user = userService.findUser(id);
+        if (user == null) {
+            throw new NotFoundException("Пользователь с id: " + id + "не найден.", User.class.getName());
         }
+        return user.getFriends().stream()
+                .map(userService::findUser)
+                .toList();
+    }
+
+    @GetMapping(value = "/{id}/friends/common/{otherId}")
+    public List<User> getUserFriends(@PathVariable int id, @PathVariable int otherId) {
+        Set<Long> friendsIds = userService.getCommonFriends(id, otherId);
+        return friendsIds.stream()
+                .map(userService::findUser)
+                .toList();
     }
 }
