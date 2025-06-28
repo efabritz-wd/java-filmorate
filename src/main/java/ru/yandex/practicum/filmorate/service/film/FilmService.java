@@ -1,9 +1,13 @@
 package ru.yandex.practicum.filmorate.service.film;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MPA;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
@@ -18,14 +22,12 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class FilmService {
+    @Qualifier("dbFilmStorage")
     private final FilmStorage filmStorage;
+    @Qualifier("dbUserStorage")
     private final UserStorage userStorage;
-
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
-        this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
-    }
 
     public List<Film> findAllFilms() {
         return this.filmStorage.findAllFilms();
@@ -80,6 +82,20 @@ public class FilmService {
                 .collect(Collectors.toList())
                 .reversed();
         return res;
+    }
+
+    public List<Genre> findAllGenres() {
+        return this.filmStorage.findAllGenres();
+    }
+    public Genre findGenreById(long id) {
+        return this.filmStorage.findGenreById(id);
+    }
+
+    public List<MPA> findAllMPA() {
+        return this.findAllMPA();
+    }
+    public MPA findMPAById(long id) {
+        return this.filmStorage.findMPAById(id);
     }
 }
 

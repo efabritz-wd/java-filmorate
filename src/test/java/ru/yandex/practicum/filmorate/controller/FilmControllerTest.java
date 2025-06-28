@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.MPA;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 
 import java.time.Duration;
@@ -9,51 +10,58 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
 class FilmControllerTest {
+    private InMemoryFilmStorage filmStorage;
 
     @Test
     void validateFilm() {
-        Film filmEmpty = new Film();
-        InMemoryFilmStorage filmStorage = new InMemoryFilmStorage();
-        assertFalse(filmStorage.validateFilm(filmEmpty, true));
+        MPA mpa = MPA.builder()
+                .id(1L)
+                .rating("pg test")
+                .build();
+        Film film = Film.builder()
+                .name("new film 2")
+                .description("description")
+                .duration(120L)
+                .releaseDate(LocalDate.parse("2023-01-01"))
+                .mpa(mpa)
+                .build();
 
-        Film filmBlankName = new Film();
-        filmBlankName.setName("");
-        filmBlankName.setDuration(Duration.ofHours(2).toMinutes());
-        filmBlankName.setReleaseDate(LocalDate.of(1999, 12, 7));
-        filmBlankName.setDescription("Description");
-        assertFalse(filmStorage.validateFilm(filmBlankName, true));
+        film.setName("");
+        film.setDuration(Duration.ofHours(2).toMinutes());
+        film.setReleaseDate(LocalDate.of(1999, 12, 7));
+        film.setDescription("Description");
+        assertFalse(filmStorage.validateFilm(film, true));
 
-        Film filmReleaseDateOld = new Film();
-        filmReleaseDateOld.setName("film");
-        filmReleaseDateOld.setDuration(120L);
-        filmReleaseDateOld.setReleaseDate(filmStorage.boundaryReleaseDate.minusDays(1));
-        filmReleaseDateOld.setDescription("Description");
-        assertFalse(filmStorage.validateFilm(filmReleaseDateOld, true));
 
-        Film filmMore200Description = new Film();
-        filmMore200Description.setName("film");
-        filmMore200Description.setDuration(120L);
-        filmMore200Description.setReleaseDate(LocalDate.of(1999, 12, 7));
-        filmMore200Description.setDescription("czgbhucejkcubxetkjrihjohcwfdipsxahjpbwwyjcouljmulbyjpyizkfeoozkstpou" +
+        film.setName("film");
+        film.setDuration(120L);
+        film.setReleaseDate(filmStorage.boundaryReleaseDate.minusDays(1));
+        film.setDescription("Description");
+        assertFalse(filmStorage.validateFilm(film, true));
+
+
+        film.setName("film");
+        film.setDuration(120L);
+        film.setReleaseDate(LocalDate.of(1999, 12, 7));
+        film.setDescription("czgbhucejkcubxetkjrihjohcwfdipsxahjpbwwyjcouljmulbyjpyizkfeoozkstpou" +
                 "qutboxvvdjnosvcjhiuwojtukpwbzxdlcrdivotmycmlofjzonunkwxzdjqzvcbaldpwlmkwroacnxiqvoekbsshyzcsifsrqxla" +
                 "zhhtsahereqvnpavvqrcpxexxgjtysyfgdrysmizoczrqgdzyyuarpzszs" +
                 "frznrmasejzelbpygnkkpihnjprdcmotfbqcafgmroqhfcjzumdufisnoalxbgbnnucmybdmzrjgkzipaunnoagyzorpkozburoa" +
                 "icwbeoqjygwcxfypskdcebojkhhjezsygpnjmsmdfgicumowvaggkf");
-        assertFalse(filmStorage.validateFilm(filmMore200Description, true));
+        assertFalse(filmStorage.validateFilm(film, true));
 
-        Film filmNegativDuration = new Film();
-        filmNegativDuration.setName("film");
-        filmNegativDuration.setDuration(-30L);
-        filmNegativDuration.setReleaseDate(LocalDate.of(1999, 12, 7));
-        filmNegativDuration.setDescription("Description");
-        assertFalse(filmStorage.validateFilm(filmNegativDuration, true));
+        film.setName("film");
+        film.setDuration(-30L);
+        film.setReleaseDate(LocalDate.of(1999, 12, 7));
+        film.setDescription("Description");
+        assertFalse(filmStorage.validateFilm(film, true));
 
-        Film filmCorrect = new Film();
-        filmCorrect.setName("Film");
-        filmCorrect.setDuration(120L);
-        filmCorrect.setReleaseDate(LocalDate.of(1999, 12, 7));
-        filmCorrect.setDescription("Description");
-        assertTrue(filmStorage.validateFilm(filmCorrect, true));
+        film.setName("Film");
+        film.setDuration(120L);
+        film.setReleaseDate(LocalDate.of(1999, 12, 7));
+        film.setDescription("Description");
+        assertTrue(filmStorage.validateFilm(film, true));
     }
 }

@@ -8,60 +8,58 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserControllerTest {
+    private InMemoryUserStorage userStorage;
 
     @Test
     void validateUser() {
-        User userEmpty = new User();
-        InMemoryUserStorage userStorage = new InMemoryUserStorage();
-        assertFalse(userStorage.validateUser(userEmpty, true));
+        User user = User.builder()
+                .name("name")
+                .login("log")
+                .email("test@mail.ru")
+                .birthday(LocalDate.parse("2023-01-01"))
+                .build();
+        
 
-        User userBlankEmail = new User();
-        userBlankEmail.setName("Vasja");
-        userBlankEmail.setEmail("");
-        userBlankEmail.setLogin("vasja");
-        userBlankEmail.setBirthday(LocalDate.now().minusYears(20));
-        assertFalse(userStorage.validateUser(userBlankEmail, true));
+        user.setName("Vasja");
+        user.setEmail("");
+        user.setLogin("vasja");
+        user.setBirthday(LocalDate.now().minusYears(20));
+        assertFalse(userStorage.validateUser(user, true));
 
-        User userEmailWithoutSymbol = new User();
-        userEmailWithoutSymbol.setName("Vasja");
-        userEmailWithoutSymbol.setEmail("vasjagmail.com");
-        userEmailWithoutSymbol.setLogin("vasja");
-        userEmailWithoutSymbol.setBirthday(LocalDate.now().minusYears(20));
-        assertFalse(userStorage.validateUser(userEmailWithoutSymbol, true));
+        user.setName("Vasja");
+        user.setEmail("vasjagmail.com");
+        user.setLogin("vasja");
+        user.setBirthday(LocalDate.now().minusYears(20));
+        assertFalse(userStorage.validateUser(user, true));
 
-        User userLoginBlank = new User();
-        userLoginBlank.setName("Vasja");
-        userLoginBlank.setEmail("vasja@gmail.com");
-        userLoginBlank.setLogin("");
-        userLoginBlank.setBirthday(LocalDate.now().minusYears(20));
-        assertFalse(userStorage.validateUser(userLoginBlank, true));
+        user.setName("Vasja");
+        user.setEmail("vasja@gmail.com");
+        user.setLogin("");
+        user.setBirthday(LocalDate.now().minusYears(20));
+        assertFalse(userStorage.validateUser(user, true));
 
-        User userLoginContainsEmptySym = new User();
-        userLoginContainsEmptySym.setName("Vasja");
-        userLoginContainsEmptySym.setEmail("vasja@gmail.com");
-        userLoginContainsEmptySym.setLogin("vas ja");
-        userLoginContainsEmptySym.setBirthday(LocalDate.now().minusYears(20));
-        assertFalse(userStorage.validateUser(userLoginContainsEmptySym, true));
+        user.setName("Vasja");
+        user.setEmail("vasja@gmail.com");
+        user.setLogin("vas ja");
+        user.setBirthday(LocalDate.now().minusYears(20));
+        assertFalse(userStorage.validateUser(user, true));
 
-        User userNameIsBlank = new User();
-        userNameIsBlank.setName("");
-        userNameIsBlank.setEmail("vasja@gmail.com");
-        userNameIsBlank.setLogin("vasja");
-        userNameIsBlank.setBirthday(LocalDate.now().minusYears(20));
-        assertTrue(userStorage.validateUser(userNameIsBlank, true));
+        user.setName("");
+        user.setEmail("vasja@gmail.com");
+        user.setLogin("vasja");
+        user.setBirthday(LocalDate.now().minusYears(20));
+        assertTrue(userStorage.validateUser(user, true));
 
-        User userGetBirthdayAfterNow = new User();
-        userGetBirthdayAfterNow.setName("Vasja");
-        userGetBirthdayAfterNow.setEmail("vasja@gmail.com");
-        userGetBirthdayAfterNow.setLogin("vasja");
-        userGetBirthdayAfterNow.setBirthday(LocalDate.now().plusDays(1));
-        assertFalse(userStorage.validateUser(userGetBirthdayAfterNow, true));
+        user.setName("Vasja");
+        user.setEmail("vasja@gmail.com");
+        user.setLogin("vasja");
+        user.setBirthday(LocalDate.now().plusDays(1));
+        assertFalse(userStorage.validateUser(user, true));
 
-        User userCorrect = new User();
-        userCorrect.setName("Vasja");
-        userCorrect.setEmail("vasja@gmail.com");
-        userCorrect.setLogin("vasja");
-        userCorrect.setBirthday(LocalDate.now().minusYears(20));
-        assertTrue(userStorage.validateUser(userCorrect, true));
+        user.setName("Vasja");
+        user.setEmail("vasja@gmail.com");
+        user.setLogin("vasja");
+        user.setBirthday(LocalDate.now().minusYears(20));
+        assertTrue(userStorage.validateUser(user, true));
     }
 }

@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -12,6 +13,7 @@ import java.util.Set;
  * Film.
  */
 @Data
+@Builder
 public class Film {
     private Long id;
     @NotBlank
@@ -23,6 +25,9 @@ public class Film {
     @NotNull
     private Long duration;
 
+    @NotNull
+    private MPA mpa;
+    private Set<Genre> genres = new HashSet<>();;
     private Set<Long> likes = new HashSet<>();
 
     public int getLikesAmount() {

@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MPA;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -13,10 +15,41 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Component
+@Component("inMemoryFilmStorage")
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> filmsMap = new HashMap<>();
+    private final Map<Long, Genre> genresMap = new HashMap<>();
+    private final Map<Long, MPA> mpaMap = new HashMap<>();
     public static final LocalDate boundaryReleaseDate = LocalDate.of(1895, 12, 28);
+
+    public List<Genre> findAllGenres() {
+        if (genresMap.values().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(genresMap.values());
+    }
+
+    public Genre findGenreById(long id) {
+        if (!genresMap.containsKey(id)) {
+            throw new NotFoundException("Жанра с id " + id + " не существует", Genre.class.getName());
+        }
+        return genresMap.get(id);
+    }
+
+    public List<MPA> findAllMPA() {
+        if (mpaMap.values().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return new ArrayList<>(mpaMap.values());
+    }
+
+    public MPA findMPAById(long id) {
+        if (!mpaMap.containsKey(id)) {
+            throw new NotFoundException("Рейтинга с id " + id + " не существует", MPA.class.getName());
+        }
+        return mpaMap.get(id);
+    }
 
     @Override
     public List<Film> findAllFilms() {

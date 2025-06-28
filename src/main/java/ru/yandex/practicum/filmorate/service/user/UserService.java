@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service.user;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.ConditionsNotMetException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -13,6 +14,8 @@ import java.util.Set;
 @Slf4j
 @Service
 public class UserService {
+
+    @Qualifier("dbUserStorage")
     private final UserStorage userStorage;
 
     public UserService(UserStorage userStorage) {
@@ -37,7 +40,7 @@ public class UserService {
 
     public void addToFriends(long userId, long friendId) {
         addFriend(userId, friendId);
-        addFriend(friendId, userId);
+      //  addFriend(friendId, userId);
     }
 
     public void addFriend(long userId, long friendId) {
@@ -69,7 +72,7 @@ public class UserService {
             throw new ConditionsNotMetException("Ошибка при удалении пользователя из друзей. Пользователя нет в друзьях");
         } else {
             deleteFriend(userId, friendId);
-            deleteFriend(friendId, userId);
+         //   deleteFriend(friendId, userId);
         }
         log.info("Пользователь удален из друзей");
     }
