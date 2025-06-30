@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.controller;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,7 +19,6 @@ class UserControllerTest {
                 .email("test@mail.ru")
                 .birthday(LocalDate.parse("2023-01-01"))
                 .build();
-        
 
         user.setName("Vasja");
         user.setEmail("");

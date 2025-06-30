@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Import({FilmDBStorage.class})
 public class FilmDBStorageTest {
     private final FilmDBStorage filmStorage;
+
     @Test
     public void findAllFilmsTest() {
         assertFalse(filmStorage.findAllFilms().isEmpty());
