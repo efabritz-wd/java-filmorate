@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Import;
 import ru.yandex.practicum.filmorate.model.MPA;
 import ru.yandex.practicum.filmorate.storage.film.FilmDBStorage;
 
+import java.io.FileNotFoundException;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -29,7 +30,7 @@ public class FilmDBStorageTest {
     }
 
     @Test
-    public void findFilmByIdTest() {
+    public void findFilmByIdTest() throws FileNotFoundException {
         Optional<Film> userOptional = Optional.ofNullable(filmStorage.findFilmById(1));
 
         assertThat(userOptional)
@@ -61,7 +62,7 @@ public class FilmDBStorageTest {
     }
 
     @Test
-    public void updateFilmTest() {
+    public void updateFilmTest() throws FileNotFoundException {
         MPA mpa = MPA.builder()
                 .rating("PG3")
                 .build();

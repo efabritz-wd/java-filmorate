@@ -8,6 +8,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
@@ -18,6 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage.validateUser;
 
 @Primary
 @Repository
@@ -59,13 +63,22 @@ public class UserDBStorage implements UserStorage {
 
     @Override
     public User findUserById(long id) {
+        String sqlCheckIfExists = "SELECT COUNT(*) FROM users WHERE id = ?";
+        int count = jdbcTemplate.queryForObject(sqlCheckIfExists, new Object[]{id}, Integer.class);
+        if (count == 0) {
+            throw new NotFoundException("Пользователя с id " + id + " не существует", User.class.getName());
+        }
         String sqlQuery = "select * from users where id = ?";
         User user = jdbcTemplate.queryForObject(sqlQuery, this::mapRowToUser, id);
+        log.info("Пользователь с id " + id + " найден");
         return user;
     }
 
     @Override
     public User createUser(User user) {
+        if (!validateUser(user, true)) {
+            throw new ValidationException("Фильм не прошел валидацию при добавлении", User.class.getName());
+        }
         String sqlQuery = "insert into users(email, login, name, birthday) values (?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -86,6 +99,19 @@ public class UserDBStorage implements UserStorage {
 
     @Override
     public User updateUser(User user) {
+        if (user.getId() == null) {
+            log.error("Обновление пользователя: не указан id");
+            throw new NotFoundException("Id должен быть указан", User.class.getName());
+        }
+        String sqlCheckIfExists = "SELECT COUNT(*) FROM users WHERE id = ?";
+        int count = jdbcTemplate.queryForObject(sqlCheckIfExists, new Object[]{user.getId()}, Integer.class);
+        if (count == 0) {
+            log.error("Обновление пользователя: пользователь не найден");
+            throw new NotFoundException("Пользователь с id: " + user.getId() + " не найден", User.class.getName());
+        }
+        if (!validateUser(user, false)) {
+            throw new ValidationException("Фильм не прошел валидацию при добавлении", User.class.getName());
+        }
         String sqlQuery = "update users set email = ?, login = ?, name = ?, birthday = ? where id = ?";
         jdbcTemplate.update(sqlQuery, user.getEmail(), user.getLogin(), user.getName(),
                 user.getBirthday(), user.getId());
@@ -109,12 +135,14 @@ public class UserDBStorage implements UserStorage {
                 .collect(Collectors.toSet());
 
         String sqlDeleteFriends = "delete from user_friend where user_id = ? and friend_id = ?";
-        oldFriendsDelete.stream()
-                .map(friendId -> jdbcTemplate.update(sqlDeleteFriends, user.getId(), friendId));
+        for (Long friendId : oldFriendsDelete) {
+            jdbcTemplate.update(sqlDeleteFriends, user.getId(), friendId);
+        }
 
         String sqlAddFriends = "insert into user_friend (user_id, friend_id) values (?, ?)";
-        newUserFriends.stream()
-                .map(friendId -> jdbcTemplate.update(sqlAddFriends, user.getId(), friendId));
+        for (Long friendId : newUserFriends) {
+            jdbcTemplate.update(sqlAddFriends, user.getId(), friendId);
+        }
     }
 
     @Override
@@ -125,17 +153,5 @@ public class UserDBStorage implements UserStorage {
         } else {
             log.error("Ошибка при удалении пользователя с id: " + user.getId());
         }
-    }
-
-    public boolean addUserToFriends(User user, User friend) {
-        String sqlQuery = "insert into user_friend(user_id, friend_id) values (?, ?)";
-        return jdbcTemplate.update(sqlQuery, user.getId(), friend.getId()) > 0;
-    }
-
-    public boolean deleteFromFriends(User user, User friend) {
-        String sqlQuery = "delete from user_friend " +
-                "where user_id = ? " +
-                "and friend_id = ?;";
-        return jdbcTemplate.update(sqlQuery, user.getId(), friend.getId()) > 0;
     }
 }

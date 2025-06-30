@@ -4,12 +4,14 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MPA;
 
+import java.io.FileNotFoundException;
 import java.util.List;
+import java.util.Optional;
 
 public interface FilmStorage {
     List<Film> findAllFilms();
 
-    Film findFilmById(long id);
+    Film findFilmById(long id) throws FileNotFoundException;
 
     Film createFilm(Film film);
 
@@ -23,5 +25,5 @@ public interface FilmStorage {
 
     List<MPA> findAllMPA();
 
-    MPA findMPAById(long id);
+    Optional<MPA> findMPAById(long id);
 }

@@ -3,26 +3,32 @@ package ru.yandex.practicum.filmorate.storage.film;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MPA;
 
+import java.io.FileNotFoundException;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage.validateFilm;
+
 @Primary
 @Repository
-//@RequiredArgsConstructor
 @Slf4j
 public class FilmDBStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
@@ -33,14 +39,18 @@ public class FilmDBStorage implements FilmStorage {
     }
 
     public Film mapRowToFilm(ResultSet resultSet, int rowNum) throws SQLException {
-        return Film.builder()
+        Optional<MPA> optionalMPA = findMPAById(resultSet.getLong("rating"));
+        Film.FilmBuilder filmBuilder = Film.builder()
                 .id(resultSet.getLong("id"))
                 .name(resultSet.getString("name"))
                 .releaseDate(resultSet.getDate("releaseDate").toLocalDate())
                 .description(resultSet.getString("description"))
                 .duration(resultSet.getLong("duration"))
-                .mpa(findMPAById(resultSet.getLong("rating")))
-                .genres(findGenresByFilmId(resultSet.getLong("id"))).build();
+                .likes(findUserLikesByFilmId(resultSet.getLong("id")))
+                .genres(findGenresByFilmId(resultSet.getLong("id")));
+
+        optionalMPA.ifPresent(filmBuilder::mpa);
+        return filmBuilder.build();
     }
 
     public Genre mapRowToGenre(ResultSet resultSet, int rowNum) throws SQLException {
@@ -61,9 +71,16 @@ public class FilmDBStorage implements FilmStorage {
         return jdbcTemplate.query(sqlQuery, this::mapRowToMPA);
     }
 
-    public MPA findMPAById(long id) {
+    public Optional<MPA> findMPAById(long id) {
+        System.out.println("findMPAById called");
         String sqlQuery = "select * from mpa where id = ?";
-        return jdbcTemplate.queryForObject(sqlQuery, this::mapRowToMPA, id);
+        try {
+            return Optional.of(jdbcTemplate.queryForObject(sqlQuery, this::mapRowToMPA, id));
+        } catch (EmptyResultDataAccessException e) {
+            System.out.println("MPA not found for ID: " + id);
+            return Optional.empty();
+        }
+
     }
 
     public MPA createMPA(MPA mpa) {
@@ -110,13 +127,24 @@ public class FilmDBStorage implements FilmStorage {
     }
 
     @Override
-    public Film findFilmById(long id) {
+    public Film findFilmById(long id) throws FileNotFoundException {
         String sqlQuery = "select * from film where id = ?";
+
+        String sqlCheckIfExists = "SELECT COUNT(*) FROM film WHERE id = ?";
+
+        int count = jdbcTemplate.queryForObject(sqlCheckIfExists, new Object[]{id}, Integer.class);
+        if (count == 0) {
+            throw new NotFoundException("Фильм с id: " + id + " не найден.", FilmStorage.class.getName());
+        }
+
         return jdbcTemplate.queryForObject(sqlQuery, this::mapRowToFilm, id);
     }
 
     @Override
     public Film createFilm(Film film) {
+        if (!validateFilm(film, true)) {
+            throw new ValidationException("Ошибка валидации фильма при создании", Film.class.getName());
+        }
         String sqlQuery = "insert into film(name, description, releaseDate, duration, rating) " +
                 "values (?, ?, ?, ?, ?)";
 
@@ -127,7 +155,13 @@ public class FilmDBStorage implements FilmStorage {
             stmt.setString(2, film.getDescription());
             stmt.setDate(3, Date.valueOf(film.getReleaseDate()));
             stmt.setLong(4, film.getDuration());
-            stmt.setLong(5, film.getMpa().getId());
+
+            if (film.getMpa() != null) {
+                stmt.setLong(5, film.getMpa().getId());
+            } else {
+                stmt.setNull(5, java.sql.Types.BIGINT);
+            }
+
             return stmt;
         }, keyHolder);
         long idOfCreatedFilm = keyHolder.getKey().longValue();
@@ -136,31 +170,53 @@ public class FilmDBStorage implements FilmStorage {
         log.info("Фильс с id: " + film.getId() + " создан.");
 
         if (film.getGenres() != null) {
-            String sqlInsertFilmGenres = "insert into film_genre(film_id, genre_id) values (?, ?)";
-            film.getGenres().stream()
-                    .map(genre -> jdbcTemplate.update(sqlInsertFilmGenres, film.getId(), genre.getId()));
+            String sqlInsertFilmGenres = "INSERT INTO film_genre(film_id, genre_id) VALUES (?, ?)";
+            String sqlCheckIfExists = "SELECT COUNT(*) FROM film_genre WHERE film_id = ? AND genre_id = ?";
+
+            film.getGenres().forEach(genre -> {
+                int count = jdbcTemplate.queryForObject(sqlCheckIfExists, new Object[]{film.getId(), genre.getId()}, Integer.class);
+                if (count == 0) {
+                    jdbcTemplate.update(sqlInsertFilmGenres, film.getId(), genre.getId());
+                }
+            });
         }
+
         return film;
     }
 
     @Override
     public Film updateFilm(Film film) {
+        if (film.getId() == null) {
+            log.error("Обновление фильма: не указан id");
+            throw new NotFoundException("Id должен быть указан", Film.class.getName());
+        }
+        String sqlCheckIfExists = "SELECT COUNT(*) FROM film WHERE id = ?";
+        int count = jdbcTemplate.queryForObject(sqlCheckIfExists, new Object[]{film.getId()}, Integer.class);
+        if (count == 0) {
+            log.error("Обновление фильма: Фильм не найден");
+            throw new NotFoundException("Фильма с id " + film.getId() + " не существует", Film.class.getName());
+        }
+        if (!validateFilm(film, true)) {
+            throw new ValidationException("Ошибка валидации фильма при создании", Film.class.getName());
+        }
         String sqlQuery = "update film set name = ?, description = ?, releaseDate = ?, duration = ?, rating = ?" +
                 "where id = ?";
+
+        Long mpaId = film.getMpa() != null ? film.getMpa().getId() : null;
         jdbcTemplate.update(sqlQuery,
-                 film.getName(),
-                 film.getDescription(),
-                 film.getReleaseDate(),
-                 film.getDuration(),
-                 film.getMpa().getId(),
-                 film.getId());
+                film.getName(),
+                film.getDescription(),
+                film.getReleaseDate(),
+                film.getDuration(),
+                mpaId,
+                film.getId());
 
         log.info("Фильс с id: " + film.getId() + " обновлен.");
 
         if (film.getGenres() != null) {
             updateFilmGenres(film);
         }
-        if(film.getLikes() != null) {
+        if (film.getLikes() != null) {
             updateFilmLikes(film);
         }
         log.info("Обновление жанров для фильма с id: " + film.getId());
@@ -186,12 +242,14 @@ public class FilmDBStorage implements FilmStorage {
                 .collect(Collectors.toSet());
 
         String sqlDeleteLikes = "delete from film_like where film_id = ? and user_id = ?";
-        oldLikesOfFilmDelete.stream()
-                .map(userId -> jdbcTemplate.update(sqlDeleteLikes, film.getId(), userId));
+        for (Long userId : oldLikesOfFilmDelete) {
+            jdbcTemplate.update(sqlDeleteLikes, film.getId(), userId);
+        }
 
         String sqlAddLikes = "insert into film_like (film_id, user_id) values (?, ?)";
-        newLikesOfFilm.stream()
-                .map(userId -> jdbcTemplate.update(sqlAddLikes, film.getId(), userId));
+        for (Long userId : newLikesOfFilm) {
+            jdbcTemplate.update(sqlAddLikes, film.getId(), userId);
+        }
 
     }
 
@@ -253,9 +311,9 @@ public class FilmDBStorage implements FilmStorage {
     public void deleteGenre(Genre genre) {
         String sqlQuery = "delete from genre where id = ?";
         if (jdbcTemplate.update(sqlQuery, genre.getId()) > 0) {
-            log.info("Удален жанр с id: " + genre.getId());
+            log.info("Жанр с id: " + genre.getId() + " удален.");
         } else {
-            log.error("Ошибка при удалении жанра с id: " + genre.getId());
+            log.error("Жанра с id: " + genre.getId() + " не может быть удален");
         }
     }
 
@@ -268,8 +326,9 @@ public class FilmDBStorage implements FilmStorage {
     }
 
     private Set<Genre> findGenresByFilmId(Long id) {
-        String sqlQuery = "select * from film_genre as fgs " +
-                "left join genre as g on fgs.genre_id = genre_id where fgs.film_id = ?";
+        String sqlQuery = "select * from genre as g1 where g1.id in " +
+                "(select f1.genre_id from film_genre as f1 where f1.film_id = ?)";
+
         List<Genre> genresOfFilmList = jdbcTemplate.query(sqlQuery, this::mapRowToGenre, id);
         return new HashSet<>(genresOfFilmList);
     }
@@ -277,5 +336,12 @@ public class FilmDBStorage implements FilmStorage {
     private void deleteFilmGenres(Long id) {
         String sqlQuery = "delete from film_genre where film_id = ?";
         jdbcTemplate.update(sqlQuery, id);
+    }
+
+    /* Likes */
+    private Set<Long> findUserLikesByFilmId(Long id) {
+        String sqlQuery = "select user_id from film_like where film_id = ?";
+        List<Long> userLikesList = jdbcTemplate.query(sqlQuery, new Object[]{id}, (rs, rowNum) -> rs.getLong("user_id"));
+        return new HashSet<>(userLikesList);
     }
 }

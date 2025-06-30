@@ -40,7 +40,7 @@ public class UserService {
 
     public void addToFriends(long userId, long friendId) {
         addFriend(userId, friendId);
-      //  addFriend(friendId, userId);
+        addFriend(friendId, userId);
     }
 
     public void addFriend(long userId, long friendId) {
@@ -56,7 +56,7 @@ public class UserService {
             user.setFriends(friendsSet);
         }
         this.userStorage.updateUser(user);
-        log.info("Пользователь добавлен в друзья");
+        log.info("Пользователь " + user.getId() + " добавил в друзья " + friend.getId());
     }
 
     public void deleteFromFriends(long userId, long friendId) {
@@ -72,7 +72,7 @@ public class UserService {
             throw new ConditionsNotMetException("Ошибка при удалении пользователя из друзей. Пользователя нет в друзьях");
         } else {
             deleteFriend(userId, friendId);
-         //   deleteFriend(friendId, userId);
+            deleteFriend(friendId, userId);
         }
         log.info("Пользователь удален из друзей");
     }

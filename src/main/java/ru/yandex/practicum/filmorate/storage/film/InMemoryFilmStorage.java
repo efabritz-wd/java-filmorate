@@ -9,10 +9,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MPA;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component("inMemoryFilmStorage")
@@ -44,11 +41,11 @@ public class InMemoryFilmStorage implements FilmStorage {
         return new ArrayList<>(mpaMap.values());
     }
 
-    public MPA findMPAById(long id) {
+    public Optional<MPA> findMPAById(long id) {
         if (!mpaMap.containsKey(id)) {
             throw new NotFoundException("Рейтинга с id " + id + " не существует", MPA.class.getName());
         }
-        return mpaMap.get(id);
+        return Optional.ofNullable(mpaMap.get(id));
     }
 
     @Override
