@@ -23,7 +23,7 @@ public interface FilmStorage {
 
     Genre findGenreById(long id);
 
-    List<MPA> findAllMPA();
+    List<MPA> findAllMPAs();
 
     Optional<MPA> findMPAById(long id);
 }

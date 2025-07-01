@@ -92,7 +92,7 @@ public class FilmService {
     }
 
     public List<MPA> findAllMPA() {
-        return this.findAllMPA();
+        return this.filmStorage.findAllMPAs();
     }
 
     public Optional<MPA> findMPAById(long id) {

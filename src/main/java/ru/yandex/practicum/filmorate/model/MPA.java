@@ -11,5 +11,5 @@ public class MPA {
     private Long id;
 
     @NotBlank
-    private String rating;
+    private String name;
 }

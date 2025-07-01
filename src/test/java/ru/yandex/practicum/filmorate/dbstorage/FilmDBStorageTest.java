@@ -44,7 +44,7 @@ public class FilmDBStorageTest {
     @Test
     public void createFilmTest() {
         MPA mpa = MPA.builder()
-                .rating("PG2")
+                .name("PG2")
                 .build();
         filmStorage.createMPA(mpa);
         Film film = Film.builder()
@@ -65,7 +65,7 @@ public class FilmDBStorageTest {
     @Test
     public void updateFilmTest() throws FileNotFoundException {
         MPA mpa = MPA.builder()
-                .rating("PG3")
+                .name("PG3")
                 .build();
         filmStorage.createMPA(mpa);
         Film film = Film.builder()
@@ -85,7 +85,7 @@ public class FilmDBStorageTest {
     @Test
     public void deleteUserTest() {
         MPA mpa = MPA.builder()
-                .rating("PG4")
+                .name("PG4")
                 .build();
         filmStorage.createMPA(mpa);
         Film film = Film.builder()

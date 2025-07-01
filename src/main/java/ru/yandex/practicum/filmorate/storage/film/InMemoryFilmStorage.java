@@ -33,7 +33,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         return genresMap.get(id);
     }
 
-    public List<MPA> findAllMPA() {
+    public List<MPA> findAllMPAs() {
         if (mpaMap.values().isEmpty()) {
             return new ArrayList<>();
         }

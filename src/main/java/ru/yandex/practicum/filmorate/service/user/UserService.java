@@ -40,7 +40,6 @@ public class UserService {
 
     public void addToFriends(long userId, long friendId) {
         addFriend(userId, friendId);
-        addFriend(friendId, userId);
     }
 
     public void addFriend(long userId, long friendId) {
@@ -66,13 +65,12 @@ public class UserService {
         }
         User friend = this.userStorage.findUserById(friendId);
 
-        if (user.getFriends().isEmpty() && friend.getFriends().isEmpty()) {
+        if (user.getFriends().isEmpty()) {
             log.warn("Список друзей пуст");
         } else if (!user.getFriends().contains(friend.getId())) {
             throw new ConditionsNotMetException("Ошибка при удалении пользователя из друзей. Пользователя нет в друзьях");
         } else {
             deleteFriend(userId, friendId);
-            deleteFriend(friendId, userId);
         }
         log.info("Пользователь удален из друзей");
     }
