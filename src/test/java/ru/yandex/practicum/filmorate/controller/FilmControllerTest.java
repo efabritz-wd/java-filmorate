@@ -18,7 +18,7 @@ class FilmControllerTest {
     void validateFilm() {
         MPA mpa = MPA.builder()
                 .id(1L)
-                .rating("pg test")
+                .name("pg test")
                 .build();
         Film film = Film.builder()
                 .name("new film 2")
