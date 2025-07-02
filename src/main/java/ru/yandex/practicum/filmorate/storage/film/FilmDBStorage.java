@@ -39,7 +39,7 @@ public class FilmDBStorage implements FilmStorage {
         MPA objMPA = null;
         Optional<Long> mpaId = Optional.ofNullable(resultSet.getLong("rating"));
         Optional<String> mpaName = Optional.ofNullable(resultSet.getString("mpa_name"));
-        if(mpaId.isPresent()) {
+        if (mpaId.isPresent()) {
             mpa = MPA.builder().id(mpaId.get());
             if (mpaName.isPresent()) {
                 mpa.name(mpaName.get());
