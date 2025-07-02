@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.film.FilmService;
@@ -17,7 +16,6 @@ public class FilmController {
 
     private final FilmService filmService;
 
-    @Autowired
     public FilmController(FilmService filmService) {
         this.filmService = filmService;
     }
@@ -60,29 +58,4 @@ public class FilmController {
         }
         return filmService.getFilmsWithMostLikes(count);
     }
-
-    /*
-    @GetMapping("/genres")
-    public List<Genre> findAllGenres() {
-        List<Genre> genres = filmService.findAllGenres();
-        return genres;
-    }
-
-    @GetMapping("/genres/{id}")
-    public Genre findGenreById(@PathVariable long id) {
-        Genre genre = filmService.findGenreById(id);
-        return genre;
-    }
-
-    @GetMapping("/mpa")
-    public List<MPA> findAllMPA() {
-        List<MPA> mpaList = filmService.findAllMPA();
-        return mpaList;
-    }
-
-    @GetMapping("/mpa/{id}")
-    public MPA findMPAById(@PathVariable long id) {
-        MPA mpa = filmService.findMPAById(id);
-        return mpa;
-    }*/
 }

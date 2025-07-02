@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.controller;
+package ru.yandex.practicum.filmorate.inMemoryStorage;
 
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -11,7 +11,7 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-class FilmControllerTest {
+class FilmInMemoryStorageTest {
     private InMemoryFilmStorage filmStorage;
 
     @Test

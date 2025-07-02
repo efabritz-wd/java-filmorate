@@ -74,12 +74,11 @@ public class FilmService {
     }
 
     public List<Film> getFilmsWithMostLikes(int count) {
-        System.out.println("service find films with most likes");
+        log.info("service find films with most likes");
         List<Film> res = filmStorage.findAllFilms().stream()
-                .sorted(Comparator.comparingInt(Film::getLikesAmount))
+                .sorted(Comparator.comparingInt(Film::getLikesAmount).reversed())
                 .limit(count)
-                .collect(Collectors.toList())
-                .reversed();
+                .collect(Collectors.toList());
         return res;
     }
 
